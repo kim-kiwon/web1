@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+
+    </head>
+    <body>
+        <h1>Object</h1>
+        <h2>Create</h2>
+        <script>
+            //객체의 생성
+            //"key":"value" 로 이루어짐.
+            //배열변수이름.key이름(=property) 으로 value값 호출가능.
+            //배열변수이름["key이름"] 으로도 가능.
+            var coworkers = {
+                "programmer":"egoing",
+                "designer":"leezhe"
+            };
+            document.write("programmer :"+coworkers.programmer+"<br>");
+            document.write("designer :"+coworkers.designer+"<br>");
+            coworkers.bookkeeper = "duru";
+            document.write("bookkeeper :"+coworkers.bookkeeper+"<br>");
+            coworkers["data scientist"] = "taeho";
+            document.write("data scientist :"+coworkers["data scientist"]+"<br>");
+        </script>
+        <h2>Iterate</h2>
+        <script>
+            for(var key in coworkers) {
+                document.write(key+' : ' + coworkers[key] + '<br>');
+            }
+            //for문 따옴표 포함 불러오므로. []로만 가능. .으로 호출시 undefined.
+        </script>
+        <h2>Property & Method</h2>
+        <script>
+            coworkers.showAll = function(){
+                for(var key in this) {
+                    document.write(key+' : ' + this[key] + '<br>');
+                }
+            }
+            // == function showAll() {} 로 정의 하는것과 같다.
+            coworkers.showAll();
+            // showAll 조차도 배열 내부에 존재하므로. 함께 출력됨.
+        </script>
+    </body>
+</html>
