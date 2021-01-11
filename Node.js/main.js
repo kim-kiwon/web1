@@ -2,33 +2,10 @@ var http = require('http');
 var fs = require('fs');
 var url = require('url'); //url 모듈 사용. url.~~로 사용한다.
 var qs = require('querystring');
+var template = require('./lib/template.js');
+var path = require('path');
+var sanitizeHtml = require('sanitize-html');
 
-function templateHTML(title, list, body, control){
-    return  `
-    <!doctype html>
-    <html>
-    <head>
-        <title>WEB1 - ${title}</title>
-        <meta charset="utf-8">
-    </head>
-    <body>
-        <h1><a href="/">WEB</a></h1>
-        ${list}
-        ${control}
-        ${body}
-    </body>
-    </html>
-        `;
-}
-
-function templateList(filelist){
-    var list = '<ul>'; 
-    for(i = 0; i < filelist.length; i++){
-        list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
-    }
-    list = list + '</ul>';
-    return list;
-}
 var app = http.createServer(function(request,response){
     var _url = request.url; //url 값. 객체로서 _url에 저장.
     var queryData = url.parse(_url, true).query; //url 모듈의 parse함수 사용. 현재 url의 query string 값을 queryData에 저장.
@@ -45,32 +22,35 @@ var app = http.createServer(function(request,response){
             
             fs.readdir('./data', function(error, filelist){
                 var title = 'Welcome';
-                var list = templateList(filelist);
                 var description = 'Hello, Node.js';
-                var template = templateHTML(title, list, `<h2>${title}</h2>${description}`, 
+                var list = template.List(filelist);
+                var html = template.HTML(title, list, `<h2>${title}</h2>${description}`, 
                 `<a href="/create">create</a>`
                 );
                 response.writeHead(200);
-                response.end(template); //template을 출력하고 종료
+                response.end(html); //template을 출력하고 종료
             })
         }
         //CSS ,HTML ,Javascript로의 링크.
         else
         {
             fs.readdir('./data', function(error, filelist){
-                fs.readFile(`data/${queryData.id}`, 'utf8', function(err,description){
+                var filteredId = path.parse(queryData.id).base;
+                fs.readFile(`data/${filteredId}`, 'utf8', function(err,description){
                     var title = queryData.id;
-                    var list = templateList(filelist);
-                    var template = templateHTML(title, list, `<h2>${title}</h2>${description}`,
+                    var sanitizedTitle = sanitizeHtml(title);
+                    var sanitizedDescription = sanitizeHtml(description);
+                    var list = template.List(filelist);
+                    var html = template.HTML(title, list, `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
                     `<a href="/create">create</a>  
-                    <a href="/update?id=${title}">update</a>
+                    <a href="/update?id=${sanitizedTitle}">update</a>
                     <form action="delete_process" method="post">
-                        <input type="hidden" name="id" value="${title}">
+                        <input type="hidden" name="id" value="${sanitizedTitle}">
                         <input type="submit" value="delete">
                     `);
                     //각 페이지에서 수정을 누를시 각 페이지 수정 링크로 이동.
                         response.writeHead(200);
-                        response.end(template); //template을 출력하고 종료
+                        response.end(html); //template을 출력하고 종료
                     });
             });
         }
@@ -81,8 +61,8 @@ var app = http.createServer(function(request,response){
     else if(pathname === '/create'){
         fs.readdir('./data', function(error, filelist){
             var title = 'WEB - Create';
-            var list = templateList(filelist);
-            var template = templateHTML(title, list, `
+            var list = template.List(filelist);
+            var html = template.HTML(title, list, `
                 <form action="/create_process" method = "post">
                 <p><input type = "text" name = "title" placeholder="title"></p>
                 <p>
@@ -94,7 +74,7 @@ var app = http.createServer(function(request,response){
                 </form>
         `, '');
             response.writeHead(200);
-            response.end(template); //template을 출력하고 종료
+            response.end(html); //template을 출력하고 종료
         })
     }
 
@@ -126,10 +106,11 @@ var app = http.createServer(function(request,response){
     else if(pathname === '/update')
     {
         fs.readdir('./data', function(error, filelist){
-            fs.readFile(`data/${queryData.id}`, 'utf8', function(err,description){
+            var filteredId = path.parse(queryData.id).base;
+            fs.readFile(`data/${filteredId.id}`, 'utf8', function(err,description){
                 var title = queryData.id;
-                var list = templateList(filelist);
-                var template = templateHTML(title, list, 
+                var list = template.List(filelist);
+                var html = template.HTML(title, list, 
                 `
                 <form action="/update_process" method = "post">
                 <input type = "hidden" name = "id" value = "${title}"> 
@@ -145,7 +126,7 @@ var app = http.createServer(function(request,response){
                 `<a href="/create">create</a>  <a href="/update?id=${title}">update</a>`);
                 //각 페이지에서 수정을 누를시 각 페이지 수정 링크로 이동.
                     response.writeHead(200);
-                    response.end(template); 
+                    response.end(html); 
                 });
         });
     }
@@ -182,7 +163,8 @@ var app = http.createServer(function(request,response){
             //post 입력이 끝. 입력을 변수로 저장.
             var post = qs.parse(body);
             var id = post.id;
-            fs.unlink(`data/${id}`, function(err){
+            var filteredId = path.parse(id).base;
+            fs.unlink(`data/${filteredId}`, function(err){
                 response.writeHead(302, {Location: `/`});
                 response.end(); 
             })
